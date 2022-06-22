@@ -4,10 +4,13 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from typing import List
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/posts",
+    tags=["Posts"]
+)
 
 
-@router.get("/posts", response_model=List[schemas.PostResponse])
+@router.get("/", response_model=List[schemas.PostResponse])
 def get_posts(db: Session = Depends(get_db)):
     # sql = 'SELECT * FROM posts'
     # cursor.execute(sql)
@@ -16,7 +19,7 @@ def get_posts(db: Session = Depends(get_db)):
     return posts
 
 
-@router.get("/posts/{id}", response_model=schemas.PostResponse)
+@router.get("/{id}", response_model=schemas.PostResponse)
 def get_post(id: int, db: Session = Depends(get_db)):
     # sql = "SELECT * FROM posts WHERE id = %s"
     # cursor.execute(sql, (str(id), ))
@@ -36,7 +39,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
     return post
 
 
-@router.post("/posts", response_model=schemas.PostResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=schemas.PostResponse, status_code=status.HTTP_201_CREATED)
 # def create_posts(payload: dict = Body(...)):
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # sql = "INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING *"
@@ -56,7 +59,7 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     return new_post
 
 
-@router.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db)):
     # deleting post
     # sql = "DELETE FROM posts WHERE id = %s RETURNING *"
@@ -75,7 +78,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.put("/posts/{id}", response_model=schemas.PostResponse)
+@router.put("/{id}", response_model=schemas.PostResponse)
 def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)):
     # sql = "UPDATE posts SET title = %s, content =  %s, published = %s WHERE id = %s RETURNING *"
     # cursor.execute(sql, (post.title, post.content, post.published, str(id)))
