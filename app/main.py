@@ -1,9 +1,10 @@
+from enum import auto
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from sqlalchemy.orm import Session
 import time
-from . import models, schemas
+from . import models, schemas, utils
 from .database import engine, get_db
 from typing import List
 
@@ -69,7 +70,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
     # sql = "SELECT * FROM posts WHERE id = %s"
     # cursor.execute(sql, (str(id), ))
     # post = cursor.fetchone()
-    
+
     post = db.query(models.Post).filter(models.Post.id == id).first()
     # post = db.query(models.Post).filter(models.Post.id == id).one_or_none()
 
@@ -83,7 +84,8 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
     return post
 
-@app.post("/posts", response_model= schemas.PostResponse, status_code=status.HTTP_201_CREATED)
+
+@app.post("/posts", response_model=schemas.PostResponse, status_code=status.HTTP_201_CREATED)
 # def create_posts(payload: dict = Body(...)):
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
     # sql = "INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING *"
@@ -93,13 +95,13 @@ def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
 
     # new_post = models.Post(
     #     title=post.title, content=post.content, published=post.published)
-    
+
     new_post = models.Post(**post.dict())
 
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
-    
+
     return new_post
 
 
@@ -111,11 +113,11 @@ def delete_post(id: int, db: Session = Depends(get_db)):
     # deletedPost = cursor.fetchone()
     # conn.commit()
     post = db.query(models.Post).filter(models.Post.id == id)
-    
+
     if post.first() == None:
         raise HTTPException(status.HTTP_404_NOT_FOUND,
                             detail=f"Post with id: {id} does not exist")
-    
+
     post.delete(synchronize_session=False)
     db.commit()
 
@@ -134,26 +136,42 @@ def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)
     if dbPost == None:
         raise HTTPException(status.HTTP_404_NOT_FOUND,
                             detail=f"Post with id: {id} does not exist")
-    
+
     post_dict = post.dict()
     post_query.update(post_dict)
-    
+
     db.commit()
 
-    return  post_query.first()
+    return post_query.first()
+
 
 @app.get("/users", response_model=List[schemas.UserResponse])
 def get_users(db: Session = Depends(get_db)):
     users = db.query(models.User).all()
     return users
 
+
 @app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
-# def create_posts(payload: dict = Body(...)):
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    # hash the password  - user.password
+    hashed_password = utils.hash(user.password)
+    user.password = hashed_password
+
     new_user = models.User(**user.dict())
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     return new_user
+
+
+@app.get("/users/{id}", response_model=schemas.UserResponse)
+def get_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"user with id: {id} does not exist")
+
+    return user
