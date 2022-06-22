@@ -1,13 +1,10 @@
-from enum import auto
-from fastapi import FastAPI, Response, status, HTTPException, Depends
+from fastapi import FastAPI
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from sqlalchemy.orm import Session
 import time
-from . import models, schemas, utils
-from .database import engine, get_db
-from typing import List
-from .routers import post, user
+from . import models
+from .database import engine
+from .routers import post, user, authentication
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -26,6 +23,7 @@ while True:
         print("Error: ", error)
         time.sleep(2)
 
+app.include_router(authentication.router)
 app.include_router(post.router)
 app.include_router(user.router)
 
