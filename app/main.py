@@ -83,7 +83,6 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
     return post
 
-
 @app.post("/posts", response_model= schemas.PostResponse, status_code=status.HTTP_201_CREATED)
 # def create_posts(payload: dict = Body(...)):
 def create_posts(post: schemas.PostCreate, db: Session = Depends(get_db)):
@@ -142,3 +141,19 @@ def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db)
     db.commit()
 
     return  post_query.first()
+
+@app.get("/users", response_model=List[schemas.UserResponse])
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(models.User).all()
+    return users
+
+@app.post("/users", status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
+# def create_posts(payload: dict = Body(...)):
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    new_user = models.User(**user.dict())
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return new_user
