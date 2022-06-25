@@ -1,4 +1,4 @@
-# FastAPI tutorial
+<center># FastAPI tutorial</center>
 
 How to install and execute this app 
 
